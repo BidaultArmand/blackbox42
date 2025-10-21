@@ -347,3 +347,21 @@ Any other relevant information.
 
 ## 📞 Getting Help
 
+- 💬 [GitHub Discussions](https://github.com/yourusername/ai-naming-reviewer/discussions)
+- 🐛 [Issue Tracker](https://github.com/yourusername/ai-naming-reviewer/issues)
+- 📧 Email: support@ai-naming-reviewer.dev
+
+## 🏆 Recognition
+
+Contributors will be:
+- Listed in CONTRIBUTORS.md
+- Mentioned in release notes
+- Credited in documentation
+
+## 📄 License
+
+By contributing, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+Thank you for contributing to AI Naming Reviewer! 🎉
