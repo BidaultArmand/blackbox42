@@ -50,14 +50,14 @@ jobs:
       - name: Run Review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
         run: ai-naming-review
 ```
 
 ### 2. Configure Secrets
 
 Add to your repository secrets:
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `BLACKBOX_API_KEY`: Your OpenAI API key
 
 ### 3. Optional: Enable Auto-Fix
 
@@ -87,7 +87,7 @@ jobs:
       - name: Run Autofix
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
         run: ai-naming-autofix
 ```
 
@@ -123,7 +123,7 @@ Add the `auto-naming-fix` label to a PR to enable automatic renames:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | *required* | OpenAI API key |
+| `BLACKBOX_API_KEY` | *required* | OpenAI API key |
 | `GITHUB_TOKEN` | *required* | GitHub token (auto-provided) |
 | `LLM_MODEL` | `gpt-4o-mini` | OpenAI model to use |
 | `MAX_TOKENS` | `1000` | Max tokens per request |
@@ -220,7 +220,7 @@ npm run build
 npm test
 
 # Run locally
-export OPENAI_API_KEY=your-key
+export BLACKBOX_API_KEY=your-key
 export GITHUB_TOKEN=your-token
 export PR_NUMBER=123
 npm run review

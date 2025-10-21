@@ -1,5 +1,6 @@
 /**
  * LLM client with caching and retry logic
+ * Uses BlackBox AI API which provides access to OpenAI models
  */
 
 import OpenAI from 'openai';
@@ -73,6 +74,7 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Ask LLM for naming suggestion with retry logic
+ * Uses BlackBox AI API (which connects to OpenAI behind the scenes)
  */
 export async function askLLM(context: NamingContext): Promise<NamingSuggestion | null> {
   const config = getLLMConfig();
@@ -84,6 +86,7 @@ export async function askLLM(context: NamingContext): Promise<NamingSuggestion |
     return cached;
   }
 
+  // Initialize OpenAI client with BlackBox AI API key
   const openai = new OpenAI({ apiKey: config.apiKey });
   const userPrompt = buildUserPrompt(context);
 

@@ -48,7 +48,7 @@ jobs:
         working-directory: /tmp/reviewer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -60,7 +60,7 @@ jobs:
 1. Go to your repository settings
 2. Navigate to **Secrets and variables** → **Actions**
 3. Add new repository secret:
-   - Name: `OPENAI_API_KEY`
+   - Name: `BLACKBOX_API_KEY`
    - Value: Your OpenAI API key (starts with `sk-`)
 
 ### Step 3: Test It!
@@ -125,7 +125,7 @@ jobs:
           npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -239,13 +239,13 @@ Monitor your OpenAI usage:
 **Problem**: "Invalid API key" or authentication errors
 
 **Solutions**:
-- Verify `OPENAI_API_KEY` is set correctly
+- Verify `BLACKBOX_API_KEY` is set correctly
 - Check key hasn't expired
 - Ensure key has sufficient credits
 - Test key with curl:
   ```bash
   curl https://api.openai.com/v1/models \
-    -H "Authorization: Bearer $OPENAI_API_KEY"
+    -H "Authorization: Bearer $BLACKBOX_API_KEY"
   ```
 
 ### High Costs

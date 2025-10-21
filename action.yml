@@ -16,8 +16,8 @@ inputs:
     description: 'GitHub token for API access'
     required: true
   
-  openai-api-key:
-    description: 'OpenAI API key for LLM access'
+  blackbox-api-key:
+    description: 'BlackBox AI API key for LLM access'
     required: true
   
   pr-number:
@@ -26,7 +26,7 @@ inputs:
     default: ${{ github.event.pull_request.number }}
   
   llm-model:
-    description: 'OpenAI model to use (e.g., gpt-4o-mini, gpt-4o)'
+    description: 'LLM model to use (e.g., gpt-4o-mini, gpt-4o) - powered by BlackBox AI'
     required: false
     default: 'gpt-4o-mini'
   
@@ -60,7 +60,7 @@ outputs:
     value: ${{ steps.run-action.outputs.autofixes-applied }}
   
   estimated-cost:
-    description: 'Estimated OpenAI API cost in USD'
+    description: 'Estimated BlackBox AI API cost in USD'
     value: ${{ steps.run-action.outputs.estimated-cost }}
 
 runs:
@@ -139,7 +139,7 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        BLACKBOX_API_KEY: ${{ inputs.blackbox-api-key }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
         PR_NUMBER: ${{ inputs.pr-number }}

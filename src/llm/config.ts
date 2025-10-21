@@ -1,5 +1,6 @@
 /**
  * LLM configuration and defaults
+ * Uses BlackBox AI API which provides access to various LLM models
  */
 
 import { LLMConfig } from '../types/index.js';
@@ -8,9 +9,9 @@ import { LLMConfig } from '../types/index.js';
  * Get LLM configuration from environment variables
  */
 export function getLLMConfig(): LLMConfig {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.BLACKBOX_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is required');
+    throw new Error('BLACKBOX_API_KEY environment variable is required');
   }
 
   return {
@@ -24,6 +25,7 @@ export function getLLMConfig(): LLMConfig {
 
 /**
  * Model pricing (per 1M tokens)
+ * Powered by BlackBox AI
  */
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'gpt-4o-mini': { input: 0.15, output: 0.60 },

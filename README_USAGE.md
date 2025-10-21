@@ -32,7 +32,7 @@ jobs:
         uses: yourusername/ai-naming-reviewer@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
           mode: review
 ```
 
@@ -69,7 +69,7 @@ jobs:
         uses: yourusername/ai-naming-reviewer@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
           mode: autofix
 ```
 
@@ -79,7 +79,7 @@ jobs:
 |-------|----------|---------|-------------|
 | `mode` | No | `review` | Operation mode: `review` or `autofix` |
 | `github-token` | Yes | - | GitHub token for API access |
-| `openai-api-key` | Yes | - | OpenAI API key |
+| `blackbox-api-key` | Yes | - | BlackBox AI API key |
 | `pr-number` | No | Auto-detected | PR number to review |
 | `llm-model` | No | `gpt-4o-mini` | OpenAI model to use |
 | `max-tokens` | No | `1000` | Max tokens per request |
@@ -104,7 +104,7 @@ jobs:
   uses: yourusername/ai-naming-reviewer@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+    blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
     mode: review
     llm-model: gpt-4o
     max-tokens: 1500
@@ -120,7 +120,7 @@ jobs:
   uses: yourusername/ai-naming-reviewer@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+    blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
     mode: review
 
 - name: Report Results
@@ -131,12 +131,12 @@ jobs:
 
 ## 🔐 Setup
 
-### 1. Add OpenAI API Key
+### 1. Add BlackBox AI API Key
 
 1. Go to repository **Settings** → **Secrets and variables** → **Actions**
 2. Click **New repository secret**
-3. Name: `OPENAI_API_KEY`
-4. Value: Your OpenAI API key (starts with `sk-`)
+3. Name: `BLACKBOX_API_KEY`
+4. Value: Your BlackBox AI API key (starts with `sk-`)
 
 ### 2. Create Auto-Fix Label (Optional)
 

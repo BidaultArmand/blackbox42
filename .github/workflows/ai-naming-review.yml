@@ -37,7 +37,7 @@ jobs:
       - name: Run AI naming review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
