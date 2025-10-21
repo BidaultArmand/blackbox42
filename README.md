@@ -1,34 +1,19 @@
-# AI Naming Reviewer 🤖
+# AI Naming Reviewer - Usage Guide
 
-An intelligent GitHub Action that reviews Pull Requests for poorly named variables, functions, and classes, then suggests improvements or automatically applies safe renames using AI.
+## 🚀 Using as a Reusable GitHub Action
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
+This action can be called from any repository to review naming conventions in Pull Requests.
 
-## ✨ Features
+### Review Mode (Comment Only)
 
-- 🔍 **Intelligent Analysis**: Uses LLM to understand code context and suggest meaningful names
-- 🌐 **Multi-Language Support**: TypeScript, JavaScript, Python, and Go
-- 🛡️ **Safe Refactoring**: Language-aware AST manipulation with verification
-- 💬 **Inline Comments**: Posts GitHub Suggested Changes on PRs
-- 🔧 **Auto-Fix Mode**: Automatically applies high-confidence renames
-- 🔒 **Security First**: Never executes code from forks
-- 💰 **Cost Efficient**: Caching and optimization keep costs under $0.05/PR
-- ⚡ **Fast**: Completes in under 2 minutes for typical PRs
-
-## 🚀 Quick Start
-
-### 1. Add to Your Repository
-
-Create `.github/workflows/ai-naming-review.yml`:
+Create `.github/workflows/ai-naming-review.yml` in your repository:
 
 ```yaml
 name: AI Naming Review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -38,28 +23,20 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout PR
+        uses: actions/checkout@v4
         with:
-          node-version: '20'
+          ref: ${{ github.event.pull_request.head.sha }}
       
-      - name: Install AI Naming Reviewer
-        run: |
-          npm install -g ai-naming-reviewer
-      
-      - name: Run Review
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
-        run: ai-naming-review
+      - name: AI Naming Review
+        uses: BidaultArmand/blackbox42@v1.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
+          mode: review
 ```
 
-### 2. Configure Secrets
-
-Add to your repository secrets:
-- `BLACKBOX_API_KEY`: Your OpenAI API key
-
-### 3. Optional: Enable Auto-Fix
+### Auto-Fix Mode (Apply Renames)
 
 Create `.github/workflows/ai-naming-autofix.yml`:
 
@@ -68,7 +45,7 @@ name: AI Naming Autofix
 
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, synchronize]
 
 permissions:
   contents: write
@@ -76,258 +53,148 @@ permissions:
 
 jobs:
   autofix:
-    if: contains(github.event.pull_request.labels.*.name, 'auto-naming-fix')
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'auto-naming-fix')
+    
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout PR
+        uses: actions/checkout@v4
         with:
-          node-version: '20'
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Run Autofix
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BLACKBOX_API_KEY: ${{ secrets.BLACKBOX_API_KEY }}
-        run: ai-naming-autofix
+      - name: AI Naming Autofix
+        uses: yourusername/ai-naming-reviewer@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
+          mode: autofix
 ```
 
-## 📖 Usage
+## 📝 Action Inputs
 
-### Review Mode (Default)
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `mode` | No | `review` | Operation mode: `review` or `autofix` |
+| `github-token` | Yes | - | GitHub token for API access |
+| `blackbox-api-key` | Yes | - | BlackBox AI API key |
+| `pr-number` | No | Auto-detected | PR number to review |
+| `llm-model` | No | `gpt-4o-mini` | OpenAI model to use |
+| `max-tokens` | No | `1000` | Max tokens per request |
+| `temperature` | No | `0.3` | LLM temperature (0.0-1.0) |
+| `log-level` | No | `INFO` | Logging level |
+| `autofix-label` | No | `auto-naming-fix` | Label for auto-fix |
 
-The action runs on every PR and posts inline comments with naming suggestions:
+## 📤 Action Outputs
 
-```typescript
-// Before
-const data = await fetchUser(id);
+| Output | Description |
+|--------|-------------|
+| `suggestions-count` | Number of suggestions generated |
+| `autofixes-applied` | Number of auto-fixes applied |
+| `estimated-cost` | Estimated OpenAI cost in USD |
 
-// AI Suggestion (posted as comment):
-// 🟢 Naming Suggestion (95% confidence)
-// Current: data
-// Suggested: userProfile
-// Rationale: More descriptive name that indicates the data type
-```
+## 🔧 Advanced Configuration
 
-### Auto-Fix Mode
-
-Add the `auto-naming-fix` label to a PR to enable automatic renames:
-
-1. High-confidence suggestions (≥85%) are automatically applied
-2. Changes are committed back to the PR branch
-3. Type-checking and tests run before committing
-4. Only works on same-repo PRs (not forks)
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BLACKBOX_API_KEY` | *required* | OpenAI API key |
-| `GITHUB_TOKEN` | *required* | GitHub token (auto-provided) |
-| `LLM_MODEL` | `gpt-4o-mini` | OpenAI model to use |
-| `MAX_TOKENS` | `1000` | Max tokens per request |
-| `LLM_TEMPERATURE` | `0.3` | Model temperature (0-1) |
-| `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARN, ERROR) |
-
-### Repository Variables
-
-Set these in your repository settings under Variables:
+### Custom Model and Settings
 
 ```yaml
-LLM_MODEL: gpt-4o-mini
-MAX_TOKENS: 1000
-LLM_TEMPERATURE: 0.3
+- name: AI Naming Review
+  uses: yourusername/ai-naming-reviewer@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
+    mode: review
+    llm-model: gpt-4o
+    max-tokens: 1500
+    temperature: 0.2
+    log-level: DEBUG
 ```
 
-## 🏗️ Architecture
+### Using Outputs
 
-```
-┌─────────────────┐
-│   GitHub PR     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Context        │  Parse diffs, extract symbols
-│  Extraction     │  Build enriched context
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  LLM Analysis   │  Send context to OpenAI
-│                 │  Get naming suggestions
-└────────┬────────┘
-         │
-         ▼
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌────────┐ ┌──────────┐
-│Comment │ │ Auto-Fix │  Apply safe renames
-│ Mode   │ │   Mode   │  Commit changes
-└────────┘ └──────────┘
+```yaml
+- name: AI Naming Review
+  id: naming-review
+  uses: yourusername/ai-naming-reviewer@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    blackbox-api-key: ${{ secrets.BLACKBOX_API_KEY }}
+    mode: review
+
+- name: Report Results
+  run: |
+    echo "Suggestions: ${{ steps.naming-review.outputs.suggestions-count }}"
+    echo "Cost: ${{ steps.naming-review.outputs.estimated-cost }}"
 ```
 
-### Module Structure
+## 🔐 Setup
 
-```
-src/
-├── context/          # Extract naming context from PRs
-│   ├── diff-parser.ts
-│   ├── symbol-extractor.ts
-│   └── context-builder.ts
-├── llm/              # LLM integration
-│   ├── client.ts
-│   ├── prompts.ts
-│   ├── schema.ts
-│   └── config.ts
-├── rename/           # Language-specific renamers
-│   ├── typescript-renamer.ts
-│   ├── python-renamer.ts
-│   ├── go-renamer.ts
-│   └── rename-orchestrator.ts
-├── github/           # GitHub API integration
-│   ├── api-client.ts
-│   ├── comment-formatter.ts
-│   ├── review.ts
-│   └── autofix.ts
-└── tests/            # Unit tests
-```
+### 1. Add BlackBox AI API Key
 
-## 🔧 Development
+1. Go to repository **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Name: `BLACKBOX_API_KEY`
+4. Value: Your BlackBox AI API key (starts with `sk-`)
 
-### Prerequisites
+### 2. Create Auto-Fix Label (Optional)
 
-- Node.js 20+
-- npm or yarn
-- OpenAI API key
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai-naming-reviewer.git
-cd ai-naming-reviewer
-
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Run tests
-npm test
-
-# Run locally
-export BLACKBOX_API_KEY=your-key
-export GITHUB_TOKEN=your-token
-export PR_NUMBER=123
-npm run review
-```
-
-### Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-
-# Run specific test
-npm test -- diff-parser.test.ts
-
-# Watch mode
-npm run test:watch
-```
-
-## 🔒 Security
-
-### Fork PRs
-
-- **Review mode**: ✅ Safe - only reads code, posts comments
-- **Auto-fix mode**: ❌ Disabled - never executes code from forks
-
-### Permissions
-
-- **Review workflow**: `contents: read`, `pull-requests: write`
-- **Autofix workflow**: `contents: write`, `pull-requests: write`
-
-### Best Practices
-
-1. Never store API keys in code
-2. Use repository secrets for sensitive data
-3. Review auto-fix commits before merging
-4. Test on draft PRs first
-
-## 💰 Cost Optimization
-
-- **Caching**: Responses cached for 1 hour
-- **Smart filtering**: Only reviews meaningful symbols
-- **Token limits**: Configurable max tokens per request
-- **Batch processing**: Efficient API usage
-
-**Typical costs**: $0.02-0.05 per PR with gpt-4o-mini
+1. Go to **Issues** → **Labels**
+2. Click **New label**
+3. Name: `auto-naming-fix`
+4. Color: `#0E8A16`
+5. Description: "Enable automatic naming fixes"
 
 ## 📊 Example Output
 
 ### Review Comment
-
 ```markdown
 ## 🟢 Naming Suggestion (92% confidence)
 
 **Current name:** `data`
 **Suggested name:** `userProfile`
 
-**Rationale:** The variable holds a user profile object fetched from the API. 
-"userProfile" is more descriptive and follows TypeScript camelCase convention.
+**Rationale:** More descriptive name that indicates the data type
 
 **Safety Analysis:**
 - API Surface: ✅ No
 - Auto-fix Safe: ✅ Yes
-- Reason: Local variable with clear scope and high confidence
+- Reason: Local variable with clear scope
 
 **Alternative names:** `profileData`, `fetchedProfile`
 ```
 
 ### Auto-Fix Commit
-
 ```
-🤖 AI Naming: Auto-fix 3 naming improvements
+🤖 AI Naming: Auto-fix 2 naming improvements
 
 - data → userProfile (src/services/user.ts)
 - calc → calculateDiscount (src/utils/pricing.ts)
-- temp → validationResult (src/validators/schema.ts)
 
 Applied by AI Naming Reviewer
 ```
 
-## 🤝 Contributing
+## 🛡️ Security
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+- ✅ Fork PRs: Review mode only (safe)
+- ❌ Fork PRs: Auto-fix disabled (security)
+- ✅ Same-repo PRs: Both modes available
+- ✅ Label-gated: Auto-fix requires label
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+## 💰 Cost
 
-## 📝 License
+- Typical PR: $0.02-0.05
+- Uses caching to reduce costs
+- Configurable token limits
+- Cost tracking in outputs
 
-MIT License - see [LICENSE](LICENSE) file for details.
+## 📚 More Information
 
-## 🙏 Acknowledgments
-
-- Built with [ts-morph](https://github.com/dsherret/ts-morph) for TypeScript refactoring
-- Uses [OpenAI API](https://openai.com/api/) for intelligent suggestions
-- Powered by [Octokit](https://github.com/octokit/octokit.js) for GitHub integration
-
-## 📞 Support
-
-- 📖 [Documentation](docs/design.md)
-- 🐛 [Issue Tracker](https://github.com/yourusername/ai-naming-reviewer/issues)
-- 💬 [Discussions](https://github.com/yourusername/ai-naming-reviewer/discussions)
+- [Full Documentation](README.md)
+- [Architecture Guide](docs/design.md)
+- [Examples](docs/examples.md)
+- [Setup Guide](docs/SETUP.md)
 
 ---
 
