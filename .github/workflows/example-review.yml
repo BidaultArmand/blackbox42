@@ -1,0 +1,33 @@
+# Example workflow for using AI Naming Reviewer in review mode
+# Copy this to your repository's .github/workflows/ directory
+
+name: AI Naming Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      
+      - name: AI Naming Review
+        uses: yourusername/ai-naming-reviewer@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          mode: review
+          # Optional: customize settings
+          # llm-model: gpt-4o-mini
+          # max-tokens: 1000
+          # temperature: 0.3
+          # log-level: INFO
