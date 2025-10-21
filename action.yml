@@ -1,0 +1,181 @@
+name: 'AI Naming Reviewer'
+description: 'AI-powered code naming review and auto-fix for Pull Requests'
+author: 'AI Naming Team'
+
+branding:
+  icon: 'edit-3'
+  color: 'blue'
+
+inputs:
+  mode:
+    description: 'Operation mode: "review" (comment only) or "autofix" (apply renames)'
+    required: false
+    default: 'review'
+  
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+  
+  openai-api-key:
+    description: 'OpenAI API key for LLM access'
+    required: true
+  
+  pr-number:
+    description: 'Pull request number to review'
+    required: false
+    default: ${{ github.event.pull_request.number }}
+  
+  llm-model:
+    description: 'OpenAI model to use (e.g., gpt-4o-mini, gpt-4o)'
+    required: false
+    default: 'gpt-4o-mini'
+  
+  max-tokens:
+    description: 'Maximum tokens per LLM request'
+    required: false
+    default: '1000'
+  
+  temperature:
+    description: 'LLM temperature (0.0-1.0)'
+    required: false
+    default: '0.3'
+  
+  log-level:
+    description: 'Logging level (DEBUG, INFO, WARN, ERROR)'
+    required: false
+    default: 'INFO'
+  
+  autofix-label:
+    description: 'Label required for auto-fix mode'
+    required: false
+    default: 'auto-naming-fix'
+
+outputs:
+  suggestions-count:
+    description: 'Number of naming suggestions generated'
+    value: ${{ steps.run-action.outputs.suggestions-count }}
+  
+  autofixes-applied:
+    description: 'Number of auto-fixes applied (autofix mode only)'
+    value: ${{ steps.run-action.outputs.autofixes-applied }}
+  
+  estimated-cost:
+    description: 'Estimated OpenAI API cost in USD'
+    value: ${{ steps.run-action.outputs.estimated-cost }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [ "${{ inputs.mode }}" != "review" ] && [ "${{ inputs.mode }}" != "autofix" ]; then
+          echo "Error: mode must be 'review' or 'autofix'"
+          exit 1
+        fi
+        
+        if [ "${{ inputs.mode }}" == "autofix" ]; then
+          # Check if PR is from fork
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "Error: Auto-fix mode is not allowed for fork PRs (security policy)"
+            exit 1
+          fi
+          
+          # Check for required label
+          if ! echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | grep -q "${{ inputs.autofix-label }}"; then
+            echo "Info: PR does not have '${{ inputs.autofix-label }}' label, skipping auto-fix"
+            exit 0
+          fi
+        fi
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Setup Python (for Python renames)
+      if: inputs.mode == 'autofix'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Setup Go (for Go renames)
+      if: inputs.mode == 'autofix'
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci --production
+
+    - name: Build project
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm run build
+
+    - name: Install language tools (autofix mode)
+      if: inputs.mode == 'autofix'
+      shell: bash
+      run: |
+        # Install Python rope (with fallback)
+        pip install rope 2>/dev/null || echo "Warning: rope installation failed, will use fallback"
+        
+        # Install Go gopls (with fallback)
+        go install golang.org/x/tools/gopls@latest 2>/dev/null || echo "Warning: gopls installation failed, will use fallback"
+
+    - name: Configure Git (autofix mode)
+      if: inputs.mode == 'autofix'
+      shell: bash
+      run: |
+        git config --global user.name "AI Naming Bot"
+        git config --global user.email "ai-naming-bot@github.com"
+
+    - name: Run AI Naming Reviewer
+      id: run-action
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        LLM_MODEL: ${{ inputs.llm-model }}
+        MAX_TOKENS: ${{ inputs.max-tokens }}
+        LLM_TEMPERATURE: ${{ inputs.temperature }}
+        LOG_LEVEL: ${{ inputs.log-level }}
+      run: |
+        cd ${{ github.action_path }}
+        
+        if [ "${{ inputs.mode }}" == "review" ]; then
+          echo "Running in review mode..."
+          npm run review 2>&1 | tee action.log
+        else
+          echo "Running in autofix mode..."
+          npm run autofix 2>&1 | tee action.log
+        fi
+        
+        # Extract metrics from logs (if available)
+        SUGGESTIONS=$(grep -oP 'Generated \K\d+(?= suggestions)' action.log | tail -1 || echo "0")
+        AUTOFIXES=$(grep -oP 'Successfully applied \K\d+' action.log | tail -1 || echo "0")
+        COST=$(grep -oP 'Cost stats: \$\K[0-9.]+' action.log | tail -1 || echo "0.00")
+        
+        echo "suggestions-count=$SUGGESTIONS" >> $GITHUB_OUTPUT
+        echo "autofixes-applied=$AUTOFIXES" >> $GITHUB_OUTPUT
+        echo "estimated-cost=$COST" >> $GITHUB_OUTPUT
+        
+        echo "✅ AI Naming Reviewer completed"
+        echo "📊 Suggestions: $SUGGESTIONS"
+        echo "🔧 Auto-fixes: $AUTOFIXES"
+        echo "💰 Estimated cost: \$$COST"
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-naming-reviewer-logs-${{ inputs.mode }}
+        path: ${{ github.action_path }}/action.log
+        retention-days: 7
